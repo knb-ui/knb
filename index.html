@@ -629,11 +629,11 @@ const WSU = 'wss://delicious-dolls-necklace-alike.trycloudflare.com/ws';
 const tg = window.Telegram?.WebApp;
 if (tg) {
   try { tg.expand(); } catch(e) {}
-  try { tg.disableVerticalSwipes?.(); } catch(e) {}
-  try { tg.setHeaderColor?.('#17212b'); } catch(e) {}
-  try { tg.setBackgroundColor?.('#17212b'); } catch(e) {}
-  try { tg.requestFullscreen?.(); } catch(e) {}
-  try { tg.ready?.(); } catch(e) {}
+  try { if(tg.disableVerticalSwipes) tg.disableVerticalSwipes(); } catch(e) {}
+  try { if(tg.setHeaderColor) tg.setHeaderColor('#17212b'); } catch(e) {}
+  try { if(tg.setBackgroundColor) tg.setBackgroundColor('#17212b'); } catch(e) {}
+  try { if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
+  try { if(tg.ready) tg.ready(); } catch(e) {}
 }
 
 // ── State ──────────────────────────────────────────────────────────────────
