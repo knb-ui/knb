@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>КНБ Казино — Админ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surf:#161b22;--surf2:#21262d;--border:#30363d;
+  --accent:#58a6ff;--ok:#3fb950;--err:#f85149;--warn:#d29922;
+  --text:#e6edf3;--muted:#7d8590;--r:8px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh}
+
+/* ─ Login ─ */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{width:100%;max-width:360px;background:var(--surf);border:1px solid var(--border);
+  border-radius:12px;padding:32px;text-align:center}
+.login-ico{font-size:48px;margin-bottom:16px}
+.login-title{font-size:22px;font-weight:700;margin-bottom:6px}
+.login-sub{color:var(--muted);margin-bottom:28px;font-size:13px}
+.field{width:100%;padding:10px 14px;background:var(--surf2);border:1px solid var(--border);
+  border-radius:var(--r);color:var(--text);font-size:14px;outline:none;margin-bottom:10px;
+  transition:border-color .15s;font-family:inherit}
+.field:focus{border-color:var(--accent)}
+.field::placeholder{color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:11px 20px;border:none;border-radius:var(--r);font-size:14px;font-weight:600;
+  cursor:pointer;transition:opacity .15s,filter .15s;font-family:inherit}
+.btn:active{filter:brightness(.85)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn-accent{background:var(--accent);color:#0d1117}
+.btn-surf{background:var(--surf2);color:var(--text);border:1px solid var(--border)}
+.btn-ok{background:var(--ok);color:#0d1117}
+.btn-err{background:var(--err);color:#fff}
+.btn-sm{padding:7px 14px;font-size:13px;width:auto}
+.err-msg{color:var(--err);font-size:12px;min-height:16px;margin-top:4px}
+
+/* ─ Layout ─ */
+#admin-screen{display:none;min-height:100vh}
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--surf);
+  border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:0 16px 20px;
+  border-bottom:1px solid var(--border);margin-bottom:12px}
+.brand-ico{font-size:24px}
+.brand-name{font-size:16px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;
+  color:var(--muted);font-size:13px;font-weight:500;transition:all .15s;
+  border-left:2px solid transparent}
+.nav-item:hover{background:var(--surf2);color:var(--text)}
+.nav-item.on{background:var(--surf2);color:var(--accent);border-left-color:var(--accent)}
+.nav-ico{font-size:16px;width:20px;text-align:center}
+.sidebar-bottom{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border)}
+.main-area{margin-left:220px;padding:24px;min-height:100vh}
+.page{display:none}
+.page.on{display:block}
+.page-title{font-size:20px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+
+/* ─ Cards ─ */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+
+/* ─ Stats grid ─ */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.stat-val{font-size:32px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.stat-icon{font-size:20px;float:right;opacity:.5}
+
+/* ─ Table ─ */
+.table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--surf2)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:10px 14px;border-top:1px solid var(--border);font-size:13px}
+tr:hover td{background:rgba(88,166,255,.04)}
+.badge-ok{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(63,185,80,.15);color:var(--ok)}
+.badge-err{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(248,81,73,.15);color:var(--err)}
+.badge-warn{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(210,153,34,.15);color:var(--warn)}
+
+/* ─ Form ─ */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:12px;font-weight:500;color:var(--muted)}
+.form-input{padding:9px 12px;background:var(--surf2);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);font-size:13px;outline:none;width:100%;
+  transition:border-color .15s;font-family:inherit}
+.form-input:focus{border-color:var(--accent)}
+textarea.form-input{resize:vertical;min-height:100px;font-family:inherit;line-height:1.5}
+.form-fb{font-size:12px;min-height:16px;margin-top:4px;padding:8px 12px;border-radius:6px;display:none}
+.form-fb.ok{display:block;background:rgba(63,185,80,.1);color:var(--ok);border:1px solid rgba(63,185,80,.2)}
+.form-fb.err{display:block;background:rgba(248,81,73,.1);color:var(--err);border:1px solid rgba(248,81,73,.2)}
+.form-fb.info{display:block;background:rgba(88,166,255,.1);color:var(--accent);border:1px solid rgba(88,166,255,.2)}
+
+/* ─ Broadcast ─ */
+.broadcast-preview{background:var(--surf2);border-radius:6px;padding:12px;font-size:13px;
+  min-height:60px;color:var(--muted);border:1px dashed var(--border);margin-bottom:12px}
+.progress-bar{height:6px;background:var(--surf2);border-radius:3px;overflow:hidden;margin-top:8px;display:none}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+
+/* ─ Promos ─ */
+.promo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.promo-card{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:14px;
+  display:flex;align-items:center;justify-content:space-between}
+.promo-code{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--accent)}
+.promo-info{font-size:12px;color:var(--muted);margin-top:3px}
+.promo-actions{display:flex;gap:6px;align-items:center}
+
+/* ─ Online indicator ─ */
+.online-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+  background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.25);border-radius:20px;
+  font-size:12px;color:var(--ok);font-weight:600}
+.online-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ─ Misc ─ */
+.sep{height:1px;background:var(--border);margin:16px 0}
+.tm{color:var(--muted);font-size:12px}
+.mt8{margin-top:8px}.mt12{margin-top:12px}
+.flex{display:flex;align-items:center;gap:8px}
+.spacer{flex:1}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ─ Loading spinner ─ */
+.spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ─ LOGIN ─────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-ico">🎮</div>
+    <div class="login-title">КНБ Казино</div>
+    <div class="login-sub">Панель администратора</div>
+    <input class="field" id="l-user" type="text" placeholder="Логин" autocomplete="username">
+    <input class="field" id="l-pass" type="password" placeholder="Пароль" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-accent" onclick="doLogin()" id="l-btn">Войти</button>
+    <div class="err-msg" id="l-err"></div>
+  </div>
+</div>
+
+<!-- ─ ADMIN PANEL ────────────────────────────────────────────────── -->
+<div id="admin-screen">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="brand">
+      <span class="brand-ico">🎮</span>
+      <span class="brand-name">КНБ Админ</span>
+    </div>
+    <div class="nav-item on" id="nav-dashboard" onclick="showPage('dashboard')">
+      <span class="nav-ico">📊</span> Дашборд
+    </div>
+    <div class="nav-item" id="nav-users" onclick="showPage('users')">
+      <span class="nav-ico">👥</span> Игроки
+    </div>
+    <div class="nav-item" id="nav-activity" onclick="showPage('activity')">
+      <span class="nav-ico">📈</span> Активность
+    </div>
+    <div class="nav-item" id="nav-transactions" onclick="showPage('transactions')">
+      <span class="nav-ico">💳</span> Транзакции
+    </div>
+    <div class="nav-item" id="nav-tournaments" onclick="showPage('tournaments')">
+      <span class="nav-ico">🏆</span> Турниры
+    </div>
+    <div class="nav-item" id="nav-broadcast" onclick="showPage('broadcast')">
+      <span class="nav-ico">📢</span> Рассылка
+    </div>
+    <div class="nav-item" id="nav-promos" onclick="showPage('promos')">
+      <span class="nav-ico">🎟️</span> Промокоды
+    </div>
+    <div class="sidebar-bottom">
+      <div class="tm" id="admin-time"></div>
+      <button class="btn btn-surf btn-sm mt8" style="width:100%" onclick="logout()">Выйти</button>
+    </div>
+  </div>
+
+  <div class="main-area">
+
+    <!-- Dashboard -->
+    <div class="page on" id="page-dashboard">
+      <div class="page-title">
+        📊 Дашборд
+        <div class="spacer"></div>
+        <div class="online-badge"><span class="online-dot"></span><span id="online-val">0</span> онлайн</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-icon">👥</span>
+          <div class="stat-val" id="s-users">—</div>
+          <div class="stat-lbl">Всего игроков</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">⚔️</span>
+          <div class="stat-val" id="s-matches">—</div>
+          <div class="stat-lbl">Сыграно матчей</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🟢</span>
+          <div class="stat-val" id="s-online">—</div>
+          <div class="stat-lbl">Сейчас онлайн</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Последние игроки</div>
+        <div id="recent-users-list"><div class="tm">Загрузка...</div></div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="page" id="page-users">
+      <div class="page-title">👥 Игроки</div>
+      <div class="card">
+        <div style="display:flex;gap:10px">
+          <input class="form-input" id="user-search" placeholder="🔍 Поиск по имени, @username или Telegram ID..."
+            oninput="searchUsers(this.value)">
+          <button class="btn btn-surf btn-sm" onclick="document.getElementById('user-search').value='';loadUsers()">✕</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap" id="users-table">
+          <div style="padding:20px" class="tm">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Broadcast -->
+    <div class="page" id="page-broadcast">
+      <div class="page-title">📢 Рассылка</div>
+      <div class="card">
+        <div class="card-title">Отправить сообщение всем игрокам через Telegram Bot</div>
+        <div class="form-row full">
+          <div class="form-group">
+            <div class="form-label">Сообщение (поддерживается HTML: &lt;b&gt;, &lt;i&gt;, &lt;a&gt;)</div>
+            <textarea class="form-input" id="bc-msg" placeholder="Текст сообщения..." oninput="updatePreview()"></textarea>
+          </div>
+        </div>
+        <div class="form-label" style="margin-bottom:6px">Предпросмотр:</div>
+        <div class="broadcast-preview" id="bc-preview">Введите текст выше...</div>
+        <div class="form-fb" id="bc-fb"></div>
+        <div class="progress-bar" id="bc-progress"><div class="progress-fill" id="bc-fill"></div></div>
+        <div class="flex mt8">
+          <div class="tm" id="bc-stats"></div>
+          <div class="spacer"></div>
+          <button class="btn btn-accent" id="bc-btn" onclick="sendBroadcast()" style="width:auto;padding:10px 24px">
+            📤 Отправить рассылку
+          </button>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(210,153,34,.06);border-color:rgba(210,153,34,.2)">
+        <div style="font-size:13px;color:var(--warn)">
+          ⚠️ <b>Внимание:</b> Рассылка отправляется всем зарегистрированным пользователям. 
+          Телеграм ограничивает частоту (~30 сообщений/сек), поэтому большая рассылка может занять время.
+          Не закрывайте страницу до завершения.
+        </div>
+      </div>
+    </div>
+
+    <!-- Promos -->
+    <div class="page" id="page-promos">
+      <div class="page-title">🎟️ Промокоды</div>
+      <div class="card">
+        <div class="card-title">Создать промокод</div>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">Код (латиница, цифры)</div>
+            <input class="form-input" id="p-code" placeholder="SUMMER2025"
+              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Награда (монет)</div>
+            <input class="form-input" id="p-reward" type="number" placeholder="500" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">Макс. использований</div>
+            <input class="form-input" id="p-uses" type="number" placeholder="100" min="1">
+          </div>
+          <div class="form-group" style="justify-content:flex-end">
+            <button class="btn btn-ok" onclick="createPromo()">+ Создать промокод</button>
+          </div>
+        </div>
+        <div class="form-fb" id="p-fb"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Активные промокоды</div>
+        <div id="promos-list"><div class="tm">Загрузка...</div></div>
+      </div>
+    </div>
+
+
+    <!-- Activity -->
+    <div class="page" id="page-activity">
+      <div class="page-title">📈 Активность</div>
+      <div class="stats-row">
+        <div class="stat-card"><span class="stat-icon">⚔️</span><div class="stat-val" id="act-matches-today">—</div><div class="stat-lbl">Матчей сегодня</div></div>
+        <div class="stat-card"><span class="stat-icon">👥</span><div class="stat-val" id="act-users-week">—</div><div class="stat-lbl">Новых за неделю</div></div>
+        <div class="stat-card"><span class="stat-icon">📅</span><div class="stat-val" id="act-matches-week">—</div><div class="stat-lbl">Матчей за неделю</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Матчи по часам (последние 24 ч)</div>
+        <div id="chart-hours" style="padding:10px 0"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Матчи по дням (последние 30 дней)</div>
+        <div id="chart-days" style="padding:10px 0"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Новые игроки по дням</div>
+        <div id="chart-newusers" style="padding:10px 0"></div>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="page" id="page-transactions">
+      <div class="page-title">💳 Лог транзакций</div>
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+          <input class="form-input" id="tx-search-uid" type="number" placeholder="User ID (или пусто = все)" style="max-width:200px">
+          <input class="form-input" id="tx-limit" type="number" placeholder="Лимит" value="100" style="max-width:100px">
+          <button class="btn btn-accent btn-sm" onclick="loadTransactions()">Показать</button>
+        </div>
+        <div id="tx-table"><div class="tm">Нажмите «Показать»</div></div>
+      </div>
+    </div>
+
+    <!-- Tournaments -->
+    <div class="page" id="page-tournaments">
+      <div class="page-title">🏆 Турниры</div>
+      <div class="card">
+        <div class="card-title">Создать турнир</div>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">Название</div>
+            <input class="form-input" id="t-title" placeholder="Вечерний турнир">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Взнос (монет)</div>
+            <input class="form-input" id="t-bet" type="number" placeholder="500">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="form-label">Макс. игроков</div>
+            <select class="form-input" id="t-maxp">
+              <option value="4">4 игрока</option>
+              <option value="8" selected>8 игроков</option>
+              <option value="16">16 игроков</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end">
+            <button class="btn btn-ok" onclick="createTournament()">+ Создать турнир</button>
+          </div>
+        </div>
+        <div class="form-fb" id="t-fb"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Список турниров</div>
+        <div id="t-list"><div class="tm">Загрузка...</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = 'https://delicious-dolls-necklace-alike.trycloudflare.com';
+let adminToken = localStorage.getItem('admin_token') || '';
+let refreshTimer;
+
+// ── Login ────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const u = document.getElementById('l-user').value.trim();
+  const p = document.getElementById('l-pass').value;
+  const btn = document.getElementById('l-btn');
+  const err = document.getElementById('l-err');
+  if(!u||!p){err.textContent='Заполните все поля';return;}
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  try{
+    const r = await fetch(`${API}/api/admin/login`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:u,password:p})
+    });
+    const d = await r.json();
+    if(d.token){
+      adminToken = d.token;
+      localStorage.setItem('admin_token', adminToken);
+      showAdmin();
+    } else { err.textContent = d.error||'Неверные данные'; }
+  }catch{ err.textContent='Ошибка подключения'; }
+  btn.disabled=false; btn.textContent='Войти';
+}
+
+async function checkAuth() {
+  if(!adminToken) return false;
+  try{
+    const r = await fetch(`${API}/api/admin/stats`,{headers:{'x-admin-token':adminToken}});
+    return r.ok;
+  }catch{ return false; }
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  adminToken='';
+  clearInterval(refreshTimer);
+  document.getElementById('admin-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+// ── Show Admin ────────────────────────────────────────────────────────────────
+function showAdmin() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('admin-screen').style.display='block';
+  loadDashboard();
+  loadUsers();
+  loadPromos();
+  loadTournaments();
+  startClock();
+  refreshTimer = setInterval(()=>{ loadDashboard(true); }, 30000);
+}
+
+let searchTimer;
+function searchUsers(val) {
+  clearTimeout(searchTimer);
+  if(!val.trim()){ loadUsers(); return; }
+  searchTimer = setTimeout(async()=>{
+    const wrap = document.getElementById('users-table');
+    try{
+      const r = await fetch(`${API}/api/admin/search?q=${encodeURIComponent(val)}`,{headers:{'x-admin-token':adminToken}});
+      const users = await r.json();
+      if(!users.length){wrap.innerHTML='<div style="padding:20px" class="tm">Ничего не найдено</div>';return;}
+      renderUsersTable(users, wrap);
+    }catch{ wrap.innerHTML='<div style="padding:20px" class="tm">Ошибка поиска</div>'; }
+  }, 350);
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  document.getElementById('page-'+name).classList.add('on');
+  document.getElementById('nav-'+name).classList.add('on');
+  if(name==='users') loadUsers();
+  if(name==='promos') loadPromos();
+  if(name==='activity') loadActivity();
+  if(name==='transactions') {}
+  if(name==='tournaments') loadTournaments();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard(silent=false) {
+  try{
+    const r = await fetch(`${API}/api/admin/stats`,{headers:{'x-admin-token':adminToken}});
+    if(!r.ok){if(!silent) logout(); return;}
+    const d = await r.json();
+    document.getElementById('s-users').textContent    = d.totalUsers;
+    document.getElementById('s-matches').textContent  = d.totalMatches;
+    document.getElementById('s-online').textContent   = d.onlineNow;
+    document.getElementById('online-val').textContent = d.onlineNow;
+  }catch{}
+
+  if(!silent){
+    try{
+      const r2 = await fetch(`${API}/api/admin/users`,{headers:{'x-admin-token':adminToken}});
+      const users = await r2.json();
+      const recent = users.slice(0,8);
+      document.getElementById('recent-users-list').innerHTML = recent.length
+        ? `<div class="table-wrap"><table>
+          <thead><tr><th>Имя</th><th>ID</th><th>Баланс</th><th>Победы</th><th>Зарегистрирован</th></tr></thead>
+          <tbody>${recent.map(u=>`<tr>
+            <td><b>${esc(u.first_name||u.username||'Игрок')}</b></td>
+            <td class="tm">${u.telegram_id}</td>
+            <td><span style="color:var(--warn)">${u.balance} 🪙</span></td>
+            <td><span style="color:var(--ok)">${u.wins} 🏆</span></td>
+            <td class="tm">${new Date(u.created_at).toLocaleDateString('ru',{day:'numeric',month:'short',year:'numeric'})}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>`
+        : '<div class="tm">Нет данных</div>';
+    }catch{}
+  }
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+function renderUsersTable(users, wrap) {
+    wrap.innerHTML = `<table>
+      <thead><tr>
+        <th>#</th><th>Имя</th><th>TG ID</th>
+        <th>Баланс</th><th>Побед</th><th>Статус</th><th>Действия</th>
+      </tr></thead>
+      <tbody>${users.map((u,i)=>{
+        const banned = u.is_banned;
+        const mblocked = u.matchmaking_blocked;
+        const statusBadge = banned
+          ? `<span class="badge-err">🚫 Бан${u.ban_until?' до '+new Date(u.ban_until).toLocaleDateString('ru'):' (перм.)'}</span>`
+          : mblocked
+          ? `<span class="badge-warn">🔒 Матч.блок</span>`
+          : `<span class="badge-ok">✅ Активен</span>`;
+        return `<tr id="urow-${u.id}">
+          <td class="tm">${i+1}</td>
+          <td><b>${esc(u.first_name||'—')}</b><br><span class="tm">${u.username?'@'+esc(u.username):'—'}</span></td>
+          <td><code style="font-family:monospace;font-size:11px">${u.telegram_id}</code></td>
+          <td><span style="color:var(--warn);font-weight:600">${u.balance} 🪙</span></td>
+          <td><span style="color:var(--ok)">${u.wins} 🏆</span></td>
+          <td>${statusBadge}</td>
+          <td>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              <button class="btn btn-ok btn-sm" onclick="openGiveCoins(${u.id},'${esc(u.first_name||u.username||'Игрок')}')">💰 Выдать</button>
+              ${banned
+                ? `<button class="btn btn-surf btn-sm" onclick="unbanUser(${u.id})">✅ Разбан</button>`
+                : `<button class="btn btn-err btn-sm" onclick="openBan(${u.id},'${esc(u.first_name||u.username||'Игрок')}')">🚫 Бан</button>`
+              }
+              ${mblocked
+                ? `<button class="btn btn-surf btn-sm" onclick="setMatchBlock(${u.id},false)">🔓 Разблок</button>`
+                : `<button class="btn btn-surf btn-sm" style="border-color:var(--warn);color:var(--warn)" onclick="setMatchBlock(${u.id},true)">🔒 Матч.блок</button>`
+              }
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+async function loadUsers() {
+  const wrap = document.getElementById('users-table');
+  wrap.innerHTML = '<div style="padding:20px" class="tm">Загрузка...</div>';
+  try{
+    const r = await fetch(`${API}/api/admin/users`,{headers:{'x-admin-token':adminToken}});
+    const users = await r.json();
+    if(!users.length){wrap.innerHTML='<div style="padding:20px" class="tm">Нет игроков</div>';return;}
+    renderUsersTable(users, wrap);
+  }catch(e){ wrap.innerHTML='<div style="padding:20px" class="tm">Ошибка загрузки: '+e.message+'</div>'; }
+}
+
+// Give coins
+function openGiveCoins(id, name) {
+  const amount = prompt(`💰 Выдать монеты игроку "${name}"\nВведите сумму (можно отрицательную для списания):`);
+  if(amount===null||amount==='') return;
+  const n = parseInt(amount);
+  if(isNaN(n)||n===0){alert('Неверная сумма');return;}
+  giveCoins(id, n);
+}
+async function giveCoins(id, amount) {
+  try{
+    const r = await fetch(`${API}/api/admin/users/${id}/coins`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':adminToken},
+      body:JSON.stringify({amount})
+    });
+    const d = await r.json();
+    if(d.success){ showNotif(`✅ Начислено ${amount > 0 ? '+' : ''}${amount} монет. Новый баланс: ${d.newBalance}`,'ok'); loadUsers(); }
+    else showNotif('❌ '+d.error,'err');
+  }catch{ showNotif('❌ Ошибка сети','err'); }
+}
+
+// Ban
+function openBan(id, name) {
+  const hours = prompt(`🚫 Бан игрока "${name}"\nВведите количество часов (0 = постоянный бан):`);
+  if(hours===null||hours==='') return;
+  const h = parseInt(hours);
+  if(isNaN(h)||h<0){alert('Неверное значение');return;}
+  banUser(id, h);
+}
+async function banUser(id, hours) {
+  try{
+    const r = await fetch(`${API}/api/admin/users/${id}/ban`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':adminToken},
+      body:JSON.stringify({hours})
+    });
+    const d = await r.json();
+    if(d.success){ showNotif(`✅ Игрок заблокирован${hours>0?' на '+hours+'ч':' навсегда'}`,'ok'); loadUsers(); }
+    else showNotif('❌ '+d.error,'err');
+  }catch{ showNotif('❌ Ошибка сети','err'); }
+}
+async function unbanUser(id) {
+  if(!confirm('Снять бан?')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/users/${id}/unban`,{method:'POST',headers:{'x-admin-token':adminToken}});
+    const d = await r.json();
+    if(d.success){ showNotif('✅ Бан снят','ok'); loadUsers(); }
+    else showNotif('❌ '+d.error,'err');
+  }catch{ showNotif('❌ Ошибка сети','err'); }
+}
+
+// Matchmaking block
+async function setMatchBlock(id, blocked) {
+  if(blocked && !confirm('Заблокировать матчмейкинг для игрока?')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/users/${id}/matchblock`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':adminToken},
+      body:JSON.stringify({blocked})
+    });
+    const d = await r.json();
+    if(d.success){ showNotif(blocked?'✅ Матчмейкинг заблокирован':'✅ Матчмейкинг разблокирован','ok'); loadUsers(); }
+    else showNotif('❌ '+d.error,'err');
+  }catch{ showNotif('❌ Ошибка сети','err'); }
+}
+
+// Notification helper
+function showNotif(msg, type) {
+  let el = document.getElementById('global-notif');
+  if(!el){ el=document.createElement('div'); el.id='global-notif'; el.style.cssText='position:fixed;top:16px;right:16px;z-index:9999;max-width:360px;padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s'; document.body.appendChild(el); }
+  el.style.background = type==='ok'?'rgba(63,185,80,.15)':'rgba(248,81,73,.15)';
+  el.style.border = type==='ok'?'1px solid rgba(63,185,80,.3)':'1px solid rgba(248,81,73,.3)';
+  el.style.color = type==='ok'?'#3fb950':'#f85149';
+  el.textContent = msg; el.style.opacity='1';
+  clearTimeout(el._t); el._t=setTimeout(()=>el.style.opacity='0',4000);
+}
+
+// ── Broadcast ─────────────────────────────────────────────────────────────────
+function updatePreview() {
+  const txt = document.getElementById('bc-msg').value;
+  const prev = document.getElementById('bc-preview');
+  prev.innerHTML = txt ? txt.replace(/\n/g,'<br>') : '<span style="opacity:.4">Введите текст выше...</span>';
+}
+
+async function sendBroadcast() {
+  const msg = document.getElementById('bc-msg').value.trim();
+  if(!msg){setFb('bc-fb','err','Введите текст сообщения');return;}
+  const btn = document.getElementById('bc-btn');
+  const fb = document.getElementById('bc-fb');
+  const progress = document.getElementById('bc-progress');
+  const fill = document.getElementById('bc-fill');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Отправка...';
+  fb.className='form-fb info'; fb.textContent='⏳ Рассылка выполняется...'; fb.style.display='block';
+  progress.style.display='block'; fill.style.width='0%';
+  // Animate progress bar
+  let pct=0;
+  const pt=setInterval(()=>{ pct=Math.min(pct+2,90); fill.style.width=pct+'%'; },300);
+  try{
+    const r = await fetch(`${API}/api/admin/broadcast`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':adminToken},
+      body:JSON.stringify({message:msg})
+    });
+    const d = await r.json();
+    clearInterval(pt); fill.style.width='100%';
+    if(d.sent !== undefined){
+      setFb('bc-fb','ok',`✅ Отправлено: ${d.sent} / ${d.total}. Не доставлено: ${d.failed}`);
+      document.getElementById('bc-stats').textContent=`${d.sent} из ${d.total} доставлено`;
+    } else { setFb('bc-fb','err','Ошибка: '+JSON.stringify(d)); }
+  }catch(e){ clearInterval(pt); setFb('bc-fb','err','Ошибка сети: '+e.message); }
+  setTimeout(()=>{ progress.style.display='none'; },2000);
+  btn.disabled=false; btn.textContent='📤 Отправить рассылку';
+}
+
+// ── Promos ────────────────────────────────────────────────────────────────────
+async function loadPromos() {
+  const el = document.getElementById('promos-list');
+  el.innerHTML='<div class="tm">Загрузка...</div>';
+  try{
+    const r = await fetch(`${API}/api/admin/promos`,{headers:{'x-admin-token':adminToken}});
+    const promos = await r.json();
+    if(!promos.length){el.innerHTML='<div class="tm">Нет промокодов</div>';return;}
+    el.innerHTML='<div class="promo-grid">'+promos.map(p=>{
+      const pct=p.max_uses>0?Math.round(p.used_count/p.max_uses*100):0;
+      const cls=p.used_count>=p.max_uses?'badge-err':p.used_count>0?'badge-warn':'badge-ok';
+      const statusTxt=p.used_count>=p.max_uses?'Исчерпан':'Активен';
+      return `<div class="promo-card">
+        <div>
+          <div class="promo-code">${esc(p.code)}</div>
+          <div class="promo-info">+${p.reward} монет · ${p.used_count}/${p.max_uses} использований</div>
+          <div style="margin-top:5px"><span class="${cls}">${statusTxt}</span></div>
+        </div>
+        <div class="promo-actions">
+          <button class="btn btn-err btn-sm" onclick="deletePromo(${p.id})">✕</button>
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+  }catch{ el.innerHTML='<div class="tm">Ошибка загрузки</div>'; }
+}
+
+async function createPromo() {
+  const code=document.getElementById('p-code').value.trim();
+  const reward=parseInt(document.getElementById('p-reward').value);
+  const maxUses=parseInt(document.getElementById('p-uses').value)||100;
+  if(!code||!reward){setFb('p-fb','err','Заполните все поля');return;}
+  try{
+    const r = await fetch(`${API}/api/admin/promos`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':adminToken},
+      body:JSON.stringify({code,reward,maxUses})
+    });
+    const d = await r.json();
+    if(d.success){
+      setFb('p-fb','ok','✅ Промокод создан!');
+      document.getElementById('p-code').value='';
+      document.getElementById('p-reward').value='';
+      document.getElementById('p-uses').value='';
+      loadPromos();
+    } else { setFb('p-fb','err',d.error||'Ошибка'); }
+  }catch{ setFb('p-fb','err','Ошибка сети'); }
+}
+
+async function deletePromo(id) {
+  if(!confirm('Удалить промокод?')) return;
+  try{
+    await fetch(`${API}/api/admin/promos/${id}`,{method:'DELETE',headers:{'x-admin-token':adminToken}});
+    loadPromos();
+  }catch{ alert('Ошибка'); }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setFb(id, cls, txt){
+  const el=document.getElementById(id);
+  el.className='form-fb '+cls; el.textContent=txt; el.style.display='block';
+  setTimeout(()=>{ if(cls==='ok') el.style.display='none'; },5000);
+}
+
+function startClock(){
+  const el=document.getElementById('admin-time');
+  function tick(){ el.textContent=new Date().toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  tick(); setInterval(tick,10000);
+}
+
+// ── Activity ──────────────────────────────────────────────────────────────────
+async function loadActivity() {
+  try{
+    const r = await fetch(`${API}/api/admin/activity`,{headers:{'x-admin-token':adminToken}});
+    const d = await r.json();
+    // Summary stats
+    const today = new Date().toISOString().slice(0,10);
+    const todayMatches = d.days.find(x=>x.day===today)?.n || 0;
+    const weekMatches = d.days.slice(-7).reduce((s,x)=>s+x.n,0);
+    const weekUsers = d.newUsers.slice(-7).reduce((s,x)=>s+x.n,0);
+    document.getElementById('act-matches-today').textContent = todayMatches;
+    document.getElementById('act-matches-week').textContent = weekMatches;
+    document.getElementById('act-users-week').textContent = weekUsers;
+    // Charts
+    renderBarChart('chart-hours', d.hours, 'hr', 'n', h=>h+':00', '#58a6ff');
+    renderBarChart('chart-days', d.days, 'day', 'n', d=>d.slice(5), '#3fb950');
+    renderBarChart('chart-newusers', d.newUsers, 'day', 'n', d=>d.slice(5), '#d29922');
+  }catch(e){ console.error(e); }
+}
+
+function renderBarChart(containerId, data, keyField, valField, labelFn, color) {
+  const el = document.getElementById(containerId);
+  if(!data||!data.length){ el.innerHTML='<div class="tm" style="padding:20px 0;text-align:center">Нет данных</div>'; return; }
+  const max = Math.max(...data.map(d=>d[valField]), 1);
+  const bars = data.map(d => {
+    const pct = Math.round((d[valField]/max)*100);
+    const label = labelFn(d[keyField]);
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:4px">
+      <div style="font-size:10px;color:var(--muted);font-weight:600">${d[valField]}</div>
+      <div style="width:100%;background:var(--surf2);border-radius:3px;height:80px;display:flex;align-items:flex-end;overflow:hidden">
+        <div style="width:100%;height:${Math.max(pct,2)}%;background:${color};border-radius:3px;transition:height .4s"></div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center">${label}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="display:flex;gap:4px;align-items:flex-end;padding:0 4px">${bars}</div>`;
+}
+
+// ── Transactions ──────────────────────────────────────────────────────────────
+async function loadTransactions() {
+  const wrap = document.getElementById('tx-table');
+  wrap.innerHTML = '<div class="tm">Загрузка...</div>';
+  const uid = document.getElementById('tx-search-uid').value.trim();
+  const limit = document.getElementById('tx-limit').value||100;
+  const url = uid
+    ? `${API}/api/admin/transactions?userId=${uid}&limit=${limit}`
+    : `${API}/api/admin/transactions?limit=${limit}`;
+  try{
+    const r = await fetch(url,{headers:{'x-admin-token':adminToken}});
+    const txs = await r.json();
+    if(!txs.length){wrap.innerHTML='<div class="tm" style="padding:20px">Транзакций нет</div>';return;}
+    const TX_LABELS = {
+      match_win:'⚔️ Победа', match_loss:'💔 Поражение', stars_purchase:'⭐ Покупка',
+      promo:'🎟️ Промокод', quest_reward:'📜 Квест', daily_bonus:'🎁 Бонус',
+      admin_grant:'🛡️ Админ', tournament_entry:'🏆 Турнир', tournament_win:'🥇 Турнир победа',
+    };
+    wrap.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>Игрок</th><th>Тип</th><th>Сумма</th><th>Payload</th><th>Дата</th></tr></thead>
+      <tbody>${txs.map(t=>{
+        const label = TX_LABELS[t.type]||t.type;
+        const amtColor = t.amount>0?'var(--ok)':'var(--err)';
+        const name = t.first_name||t.username||`#${t.user_id}`;
+        return `<tr>
+          <td class="tm">${t.id}</td>
+          <td><b>${esc(name)}</b><br><span class="tm">#${t.user_id}</span></td>
+          <td>${label}</td>
+          <td style="color:${amtColor};font-weight:700">${t.amount>0?'+':''}${t.amount} 🪙</td>
+          <td class="tm" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.payload||'')}</td>
+          <td class="tm">${new Date(t.created_at).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  }catch(e){ wrap.innerHTML='<div class="tm">Ошибка: '+e.message+'</div>'; }
+}
+
+// ── Tournaments ───────────────────────────────────────────────────────────────
+async function loadTournaments() {
+  const el = document.getElementById('t-list');
+  el.innerHTML = '<div class="tm">Загрузка...</div>';
+  try{
+    const r = await fetch(`${API}/api/admin/tournaments`,{headers:{'x-admin-token':adminToken}});
+    const list = await r.json();
+    if(!list.length){el.innerHTML='<div class="tm">Турниров нет</div>';return;}
+    el.innerHTML = list.map(t=>{
+      const statusMap = {open:'🟡 Открыт',active:'🟢 Идёт',finished:'✅ Завершён',cancelled:'❌ Отменён'};
+      const statusBadge = statusMap[t.status]||t.status;
+      const players = t.players||[];
+      return `<div class="card" style="margin-bottom:12px;background:var(--surf2)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-size:15px;font-weight:700">${esc(t.title)}</div>
+            <div class="tm" style="margin-top:4px">Взнос: <b style="color:var(--warn)">${t.bet} 🪙</b> · Призовой фонд: <b style="color:var(--ok)">${t.prize_pool} 🪙</b> · ${statusBadge}</div>
+            <div class="tm" style="margin-top:2px">Игроков: <b>${t.player_count||0}</b> / ${t.max_players}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${t.status==='open' ? `<button class="btn btn-ok btn-sm" onclick="startTournament(${t.id})">▶ Старт</button>` : ''}
+            ${t.status==='open'||t.status==='active' ? `<button class="btn btn-err btn-sm" onclick="cancelTournament(${t.id})">✕ Отменить</button>` : ''}
+          </div>
+        </div>
+        ${players.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">
+          ${players.map(p=>`<span style="padding:3px 8px;background:var(--surf);border-radius:4px;font-size:12px;${p.eliminated?'opacity:.4;text-decoration:line-through':''}">
+            ${esc(p.first_name||p.username||'?')}${p.eliminated?' ❌':''}
+          </span>`).join('')}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }catch(e){ el.innerHTML='<div class="tm">Ошибка: '+e.message+'</div>'; }
+}
+
+async function createTournament() {
+  const title = document.getElementById('t-title').value.trim()||'Турнир';
+  const bet = parseInt(document.getElementById('t-bet').value)||500;
+  const maxPlayers = parseInt(document.getElementById('t-maxp').value)||8;
+  try{
+    const r = await fetch(`${API}/api/admin/tournaments`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':adminToken},
+      body:JSON.stringify({title,bet,maxPlayers})
+    });
+    const d = await r.json();
+    if(d.success){ setFb('t-fb','ok',`✅ Турнир создан! ID: ${d.id}`); loadTournaments(); }
+    else setFb('t-fb','err',d.error||'Ошибка');
+  }catch{ setFb('t-fb','err','Ошибка сети'); }
+}
+
+async function startTournament(id) {
+  if(!confirm('Запустить турнир? Игроки будут сведены в пары.')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/tournaments/${id}/start`,{method:'POST',headers:{'x-admin-token':adminToken}});
+    const d = await r.json();
+    if(d.success){ showNotif(`✅ Турнир запущен! ${d.pairs} пар(ы) в первом раунде`,'ok'); loadTournaments(); }
+    else showNotif('❌ '+d.error,'err');
+  }catch{ showNotif('❌ Ошибка сети','err'); }
+}
+
+async function cancelTournament(id) {
+  if(!confirm('Отменить турнир? Взносы будут возвращены.')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/tournaments/${id}/cancel`,{method:'POST',headers:{'x-admin-token':adminToken}});
+    const d = await r.json();
+    if(d.success){ showNotif('✅ Турнир отменён, взносы возвращены','ok'); loadTournaments(); }
+    else showNotif('❌ '+d.error,'err');
+  }catch{ showNotif('❌ Ошибка сети','err'); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async()=>{
+  if(adminToken){
+    const ok = await checkAuth();
+    if(ok) showAdmin();
+    else { localStorage.removeItem('admin_token'); adminToken=''; }
+  }
+})();
+</script>
+</body>
+</html>
