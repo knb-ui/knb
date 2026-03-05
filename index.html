@@ -662,11 +662,12 @@ function avHTML(name, size=38) {
 // ── WebSocket ──────────────────────────────────────────────────────────────
 function connectWs() {
   if (ws && (ws.readyState===0||ws.readyState===1)) return;
+  $('load-msg').textContent = 'Подключение...';
   ws = new WebSocket(WSU);
-  ws.onopen    = () => { clearTimeout(wsTimer); wsSend({type:'auth', initData}); };
-  ws.onmessage = e => { try{ onMsg(JSON.parse(e.data)); }catch{} };
-  ws.onclose   = () => { wsTimer = setTimeout(connectWs, 3000); };
-  ws.onerror   = () => ws.close();
+  ws.onopen    = () => { clearTimeout(wsTimer); $('load-msg').textContent = 'Авторизация...'; wsSend({type:'auth', initData}); };
+  ws.onmessage = e => { try{ onMsg(JSON.parse(e.data)); }catch(err){ console.error(err); } };
+  ws.onclose   = (e) => { $('load-msg').textContent = 'Переподключение... (код: '+e.code+')'; wsTimer = setTimeout(connectWs, 3000); };
+  ws.onerror   = (e) => { $('load-msg').textContent = 'Ошибка WS соединения'; ws.close(); };
 }
 function wsSend(d) { if(ws?.readyState===1) ws.send(JSON.stringify(d)); }
 
