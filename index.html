@@ -783,6 +783,14 @@ function onMsg(m) {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
+
+// Debug overlay
+window.onerror = function(msg, src, line) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:10px;font-size:12px;z-index:9999;word-break:break-all';
+  d.textContent = 'ERROR: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(d);
+};
 function updBal(b) { if(user) user.balance=b; $('bal').textContent=fmtN(b); }
 function fmtN(n)   { return n>=1000?(n/1000).toFixed(n%1000?1:0)+'k':String(n); }
 function esc(s)    { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
